@@ -1,0 +1,39 @@
+name: swiftbuy-local
+
+services:
+  web:
+    build: .
+    ports:
+      - "8081:80"
+    environment:
+      DB_HOST: db
+      DB_USER: swiftbuy
+      DB_PASSWORD: ${DB_PASSWORD:-swiftbuy_dev_password}
+      DB_NAME: swiftbuy
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    image: swiftbuy-database:local
+    environment:
+      MARIADB_DATABASE: swiftbuy
+      MARIADB_USER: swiftbuy
+      MARIADB_PASSWORD: ${DB_PASSWORD:-swiftbuy_dev_password}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-swiftbuy_root_dev_password}
+    volumes:
+      - swiftbuy_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  swiftbuy_data:
